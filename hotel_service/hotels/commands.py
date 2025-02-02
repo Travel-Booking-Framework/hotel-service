@@ -1,14 +1,29 @@
+from pybreaker import CircuitBreaker
 from .repository import HotelRepository
 
-class HotelCommands:
-    @staticmethod
-    def create_hotel(data):
-        return HotelRepository.create_hotel(data)
+hotel_breaker = CircuitBreaker(fail_max=3, reset_timeout=60)
 
-    @staticmethod
-    def update_hotel(hotel_id, data):
-        return HotelRepository.update_hotel(hotel_id, data)
+class CreateHotelCommand:
+    def __init__(self, data):
+        self.data = data
 
-    @staticmethod
-    def delete_hotel(hotel_id):
-        return HotelRepository.delete_hotel(hotel_id)
+    @hotel_breaker
+    def execute(self):
+        return HotelRepository.create_hotel(self.data)
+
+class UpdateHotelCommand:
+    def __init__(self, hotel_id, data):
+        self.hotel_id = hotel_id
+        self.data = data
+
+    @hotel_breaker
+    def execute(self):
+        return HotelRepository.update_hotel(self.hotel_id, self.data)
+
+class DeleteHotelCommand:
+    def __init__(self, hotel_id):
+        self.hotel_id = hotel_id
+
+    @hotel_breaker
+    def execute(self):
+        return HotelRepository.delete_hotel

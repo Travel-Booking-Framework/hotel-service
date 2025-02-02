@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from proto import hotel_pb2 as proto_dot_hotel__pb2
+import hotel_pb2 as hotel__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in proto/hotel_pb2_grpc.py depends on'
+        + f' but the generated code in hotel_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,8 +36,8 @@ class HotelServiceStub(object):
         """
         self.BookHotel = channel.unary_unary(
                 '/HotelService/BookHotel',
-                request_serializer=proto_dot_hotel__pb2.HotelRequest.SerializeToString,
-                response_deserializer=proto_dot_hotel__pb2.HotelResponse.FromString,
+                request_serializer=hotel__pb2.HotelRequest.SerializeToString,
+                response_deserializer=hotel__pb2.HotelResponse.FromString,
                 _registered_method=True)
 
 
@@ -55,8 +55,8 @@ def add_HotelServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'BookHotel': grpc.unary_unary_rpc_method_handler(
                     servicer.BookHotel,
-                    request_deserializer=proto_dot_hotel__pb2.HotelRequest.FromString,
-                    response_serializer=proto_dot_hotel__pb2.HotelResponse.SerializeToString,
+                    request_deserializer=hotel__pb2.HotelRequest.FromString,
+                    response_serializer=hotel__pb2.HotelResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -84,8 +84,8 @@ class HotelService(object):
             request,
             target,
             '/HotelService/BookHotel',
-            proto_dot_hotel__pb2.HotelRequest.SerializeToString,
-            proto_dot_hotel__pb2.HotelResponse.FromString,
+            hotel__pb2.HotelRequest.SerializeToString,
+            hotel__pb2.HotelResponse.FromString,
             options,
             channel_credentials,
             insecure,

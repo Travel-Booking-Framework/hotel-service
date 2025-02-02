@@ -1,37 +1,61 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 from .repository import HotelRepository
-from .commands import HotelCommands
+from .serializers import HotelSerializer
 from .grpc_client import HotelClient
 
 class HotelListView(APIView):
     def get(self, request):
         hotels = HotelRepository.get_all_hotels()
-        data = [{'id': h.id, 'name': h.name, 'location': h.location, 'available_rooms': h.available_rooms} for h in hotels]
-        return Response(data)
+        serializer = HotelSerializer(hotels, many=True)
+        return Response(serializer.data)
 
     def post(self, request):
-        hotel = HotelCommands.create_hotel(request.data)
-        return Response({'id': hotel.id, 'name': hotel.name, 'location': hotel.location, 'available_rooms': hotel.available_rooms})
+        serializer = HotelSerializer(data=request.data)
+        if serializer.is_valid():
+            hotel = HotelRepository.create_hotel(serializer.validated_data)
+            return Response(HotelSerializer(hotel).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class HotelDetailView(APIView):
     def get(self, request, hotel_id):
         hotel = HotelRepository.get_hotel_by_id(hotel_id)
-        if hotel:
-            return Response({'id': hotel.id, 'name': hotel.name, 'location': hotel.location, 'available_rooms': hotel.available_rooms})
-        return Response({'error': 'Hotel not found'}, status=404)
+        if not hotel:
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HotelSerializer(hotel)
+        return Response(serializer.data)
 
     def put(self, request, hotel_id):
-        HotelCommands.update_hotel(hotel_id, request.data)
-        return Response({'message': 'Hotel updated'})
+        hotel = HotelRepository.get_hotel_by_id(hotel_id)
+        if not hotel:
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = HotelSerializer(hotel, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_hotel = HotelRepository.update_hotel(hotel, serializer.validated_data)
+            return Response(HotelSerializer(updated_hotel).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, hotel_id):
-        HotelCommands.delete_hotel(hotel_id)
-        return Response({'message': 'Hotel deleted'})
+        if not HotelRepository.get_hotel_by_id(hotel_id):
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        HotelRepository.delete_hotel(hotel_id)
+        return Response({'message': 'Hotel deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 class HotelBookingView(APIView):
     def post(self, request, hotel_id):
         user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not HotelRepository.get_hotel_by_id(hotel_id):
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         client = HotelClient()
-        response = client.book_hotel(user_id, hotel_id)
-        return Response({'message': response.message})
+        try:
+            response = client.book_hotel(user_id, hotel_id)
+            return Response({'message': response.message})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
