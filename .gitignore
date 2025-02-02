@@ -1,0 +1,16 @@
+# Virtual environment
+venv/
+
+# Python compiled files
+*.pyc
+__pycache__/
+
+# Database
+*.sqlite3
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Environment variables
+.env
